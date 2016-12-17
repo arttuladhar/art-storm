@@ -1,0 +1,13 @@
+.settings
+.gitattributes
+.gradle
+build/
+bin/
+*.class
+*.classpath
+*.project
+graph.db/
+*.log
+.pmd
+.idea
+*.iml

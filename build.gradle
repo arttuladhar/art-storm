@@ -1,0 +1,95 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'checkstyle'
+// apply plugin: 'pmd'
+apply plugin: 'maven-publish'
+apply plugin: 'jacoco'
+
+task(runSimple, dependsOn: 'classes', type: JavaExec) {
+    main = 'com.aayushtuladhar.storm.HelloWorldTopology'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+defaultTasks 'runSimple'
+
+jar.baseName = 'art-Storm'
+group = 'com.aayushtuladhar.storm'
+description = 'Storm POC'
+
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven { url 'http://packages.confluent.io/maven' }
+}
+
+ext {
+    stormVersion = "1.0.2"
+    kafkaVersion = "0.8.1"
+    avroVersion = "1.8.0"
+    insightsAvroDomainObjectVersion = "1.0.4-SNAPSHOT"
+    kafkaClientVersion = "0.9.0.0"
+}
+
+dependencies {
+    // Storm
+    compile "org.apache.storm:storm-core:$stormVersion"
+
+    // Twitter Stream
+    compile "org.twitter4j:twitter4j-stream:4.0.4"
+
+    compile "org.apache.kafka:kafka_2.8.2:$kafkaVersion"
+    compile 'org.apache.storm:storm-kafka:0.9.6'
+
+    //Confluent Avro
+    compile 'io.confluent:kafka-avro-serializer:1.0'
+    
+    // Kafka producer
+    compile "org.apache.kafka:kafka-clients:$kafkaClientVersion"    
+    
+    compile 'org.json:json:20090211'
+    compile "com.fasterxml.jackson.core:jackson-databind:2.5.0"
+    compile 'com.google.guava:guava:19.0'
+    compile 'commons-collections:commons-collections:3.2.2'
+    
+    // Avro dependencies
+    compile "org.apache.avro:avro:$avroVersion"
+    
+    //Logs
+    compile 'ch.qos.logback:logback-classic:1.1.3'
+    compile "org.projectlombok:lombok:1.14.4"
+      
+
+
+    //Test Dependencies
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.mockito:mockito-core:1.10.19'
+    
+}
+
+configurations.all {
+// check for updates every build
+resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
+checkstyle {
+    configFile = new File(rootDir, "tools/checkstyle/checkstyle.xml")
+    ignoreFailures = false
+    sourceSets = [sourceSets.main]
+}
+
+task checkstyleReport << {
+    if (file("$buildDir/reports/checkstyle/main.xml").exists()) {
+	ant.xslt(in: "$buildDir/reports/checkstyle/main.xml",
+	style: "tools/checkstyle/checkstyle.xsl",
+	out: "$buildDir/reports/checkstyle/checkstyle_report.html"
+	)
+    }
+}
+
+gradle.taskGraph.afterTask { Task task, TaskState state ->
+    if (task.name in ['checkstyleMain']) {
+	checkstyleReport.execute()
+    }
+}
